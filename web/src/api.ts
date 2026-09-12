@@ -4,7 +4,7 @@ export type ScoreFlashMatch = {
   home_team: string;
   away_team: string;
   score: number[] | null;
-  competition: string;
+  competition: string | null;
 };
 
 export type TeamQueryResult = {
@@ -17,6 +17,24 @@ export type TeamQueryResult = {
   competition: string | null;
   average: number;
   unit: string;
+  matches: ScoreFlashMatch[];
+  cached: boolean;
+  insight: string;
+  confidence: "inicial" | "média" | "alta";
+};
+
+export type HeadToHeadQueryResult = {
+  kind: "head_to_head";
+  answer: string;
+  team: string;
+  opponent: string;
+  metric: "gols";
+  games: number;
+  venue: "any" | "home" | "away";
+  competition: string | null;
+  average: number;
+  team_average: number;
+  opponent_average: number;
   matches: ScoreFlashMatch[];
   cached: boolean;
   insight: string;
@@ -62,7 +80,7 @@ export type PlayerOpportunityResult = {
   insight: string;
 };
 
-export type QueryResult = TeamQueryResult | PlayerOpportunityResult;
+export type QueryResult = TeamQueryResult | HeadToHeadQueryResult | PlayerOpportunityResult;
 
 const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000").replace(/\/+$/, "");
 

@@ -9,6 +9,19 @@ from scoreflash.storage.sqlite import QueryCache, TeamIndex
 
 
 class QuestionInterpreterTests(unittest.TestCase):
+    def test_recognizes_head_to_head_goals_with_named_home_team(self) -> None:
+        intent = RuleBasedQuestionInterpreter().parse(
+            "Qual a media de gols no confronto Gremio e Vasco sendo Gremio o mandante pelo Campeonato Brasileiro?",
+            (),
+        )
+
+        self.assertEqual(intent.kind, "head_to_head")
+        self.assertEqual(intent.team_name, "gremio")
+        self.assertEqual(intent.opponent_name, "vasco")
+        self.assertEqual(intent.metric, "gols")
+        self.assertEqual(intent.venue.value, "home")
+        self.assertEqual(intent.competition_name, "brasileirao")
+
     def test_interprets_known_team_home_venue_and_game_count(self) -> None:
         intent = RuleBasedQuestionInterpreter().parse(
             "Qual a média de finalizações do Newell's em casa nos últimos 5 jogos?",

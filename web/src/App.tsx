@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 
 import {
+  HeadToHeadQueryResult,
   PlayerOpportunityResult,
   QueryResult,
   ScoreFlashMatch,
@@ -10,6 +11,7 @@ import {
 } from "./api";
 
 const examples = [
+  "Qual a média de gols no confronto Grêmio e Vasco sendo o Grêmio mandante pelo Campeonato Brasileiro?",
   "Qual a média de finalizações do Flamengo nos últimos 5 jogos?",
   "O São Paulo chuta mais fora ou em casa?",
   "O Léo Ortiz é uma boa ideia para finalizar amanhã pelo Flamengo?",
@@ -273,9 +275,77 @@ function TeamResultPanel({ result }: { result: TeamQueryResult }) {
   );
 }
 
+function HeadToHeadResultPanel({ result }: { result: HeadToHeadQueryResult }) {
+  return (
+    <div className="space-y-6 sm:space-y-8">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-5">
+        <div className="flex items-center gap-2 text-xs font-semibold tracking-[0.17em] text-[#e9877e] uppercase"><PulseIcon /> Confronto direto</div>
+        {result.cached && <span className="border border-white/12 px-2.5 py-1 text-[10px] font-semibold tracking-[0.12em] text-[#abb3af] uppercase">resultado recente</span>}
+      </div>
+
+      <div>
+        <p className="font-display text-[clamp(2.6rem,11vw,5.2rem)] leading-[0.92] tracking-[-0.065em] text-[#f6f1e9]">
+          {result.team} <span className="text-[#d96a63]">x</span> {result.opponent}
+        </p>
+        <p className="mt-3 text-sm text-[#aab2ad]">
+          {venueLabel(result.venue)}{result.competition ? ` / ${result.competition}` : ""}
+        </p>
+      </div>
+
+      <section className="grid grid-cols-3 border-y border-white/10" aria-label="Médias de gols do confronto">
+        <div className="border-r border-white/10 py-4 pr-3 sm:py-5 sm:pr-5">
+          <p className="text-[10px] font-semibold tracking-[0.14em] text-[#7f8984] uppercase">{result.team}</p>
+          <p className="mt-2 font-mono text-2xl tracking-[-0.06em] text-[#f4f0e9] sm:text-3xl">{formatNumber(result.team_average)}</p>
+          <p className="mt-1 text-[11px] text-[#858d89]">gols por jogo</p>
+        </div>
+        <div className="border-r border-white/10 px-3 py-4 sm:px-5 sm:py-5">
+          <p className="text-[10px] font-semibold tracking-[0.14em] text-[#7f8984] uppercase">{result.opponent}</p>
+          <p className="mt-2 font-mono text-2xl tracking-[-0.06em] text-[#f4f0e9] sm:text-3xl">{formatNumber(result.opponent_average)}</p>
+          <p className="mt-1 text-[11px] text-[#858d89]">gols por jogo</p>
+        </div>
+        <div className="py-4 pl-3 sm:py-5 sm:pl-5">
+          <p className="text-[10px] font-semibold tracking-[0.14em] text-[#e9877e] uppercase">Total</p>
+          <p className="mt-2 font-mono text-2xl tracking-[-0.06em] text-[#f1b7b2] sm:text-3xl">{formatNumber(result.average)}</p>
+          <p className="mt-1 text-[11px] text-[#858d89]">gols por jogo</p>
+        </div>
+      </section>
+
+      <p className="max-w-3xl text-lg leading-7 text-[#e5e8e1] sm:text-xl sm:leading-8">{result.answer}</p>
+
+      <section className="border-l-2 border-[#d96a63] pl-4" aria-label="Critério do confronto">
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="text-xs font-semibold tracking-[0.15em] text-[#d9ddda] uppercase">Leitura do confronto</h3>
+          <span className="text-[10px] font-semibold tracking-[0.12em] text-[#e9877e] uppercase">Confiança {result.confidence}</span>
+        </div>
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-[#b8bfbb]">{result.insight}</p>
+      </section>
+
+      <section aria-label="Confrontos usados">
+        <div className="mb-3 flex items-center justify-between gap-4">
+          <h3 className="text-xs font-semibold tracking-[0.15em] text-[#d9ddda] uppercase">Confrontos usados</h3>
+          <span className="text-xs text-[#858d89]">{result.games} {result.games === 1 ? "jogo" : "jogos"}</span>
+        </div>
+        <div className="divide-y divide-white/8 border-y border-white/10">
+          {result.matches.map((match) => (
+            <div key={match.id} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 py-3.5 text-sm">
+              <time className="font-mono text-[11px] text-[#8e9692]" dateTime={match.date}>{formatDate(match.date)}</time>
+              <div className="min-w-0">
+                <p className="truncate text-[#e5e7e2]">{match.home_team} <span className="text-[#767e7a]">x</span> {match.away_team}</p>
+                <p className="mt-0.5 truncate text-[11px] text-[#777f7b]">{match.competition ?? "Competição não informada"}</p>
+              </div>
+              <span className="font-mono text-sm font-semibold text-[#f0c4be]">{matchScore(match)}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function ResultsPanel({ result }: { result: QueryResult | null }) {
   if (!result) return <EmptyResult />;
   if (result.kind === "player_opportunity") return <PlayerOpportunityPanel result={result} />;
+  if (result.kind === "head_to_head") return <HeadToHeadResultPanel result={result} />;
   return <TeamResultPanel result={result} />;
 }
 

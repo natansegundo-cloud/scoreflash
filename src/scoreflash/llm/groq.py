@@ -19,6 +19,8 @@ class QuestionIntent:
     games: int
     venue: Venue
     competition_name: str = ""
+    opponent_name: str = ""
+    kind: str = "team_statistic"
 
 
 class GroqQuestionInterpreter:
@@ -38,7 +40,9 @@ class GroqQuestionInterpreter:
                     "role": "system",
                     "content": (
                         "Extraia uma consulta de estatística de futebol em português. "
-                        "Responda somente JSON com team_name, metric, games, venue e competition_name. "
+                        "Responda somente JSON com team_name, opponent_name, kind, metric, games, venue e competition_name. "
+                        "kind deve ser team_statistic ou head_to_head. Em head_to_head, team_name e a equipe principal e opponent_name e a outra equipe. "
+                        "Quando uma equipe for mandante ou visitante, ela deve ser team_name. "
                         "venue deve ser any, home ou away. games deve ser inteiro de 1 a 20. "
                         "Extraia o nome da equipe citado pela pessoa mesmo que ela ainda não exista "
                         "no índice local. A lista serve apenas como referência de apelidos já conhecidos. "
@@ -71,8 +75,14 @@ class GroqQuestionInterpreter:
             team_name = str(parsed["team_name"]).strip()
             metric = str(parsed["metric"]).strip()
             competition_name = str(parsed.get("competition_name", "")).strip()
+            opponent_name = str(parsed.get("opponent_name", "")).strip()
+            kind = str(parsed.get("kind", "team_statistic")).strip()
         except (KeyError, IndexError, TypeError, ValueError, json.JSONDecodeError) as error:
             raise QuestionInterpretationError("A Groq devolveu uma interpretação inválida.") from error
+        if kind not in {"team_statistic", "head_to_head"}:
+            raise QuestionInterpretationError("A Groq devolveu um tipo de consulta invalido.")
+        if kind == "head_to_head" and not opponent_name:
+            raise QuestionInterpretationError("A pergunta de confronto precisa informar as duas equipes.")
         if not metric or not 1 <= games <= 20:
             raise QuestionInterpretationError("A pergunta precisa informar uma estatística e período válidos.")
         return QuestionIntent(
@@ -81,4 +91,6 @@ class GroqQuestionInterpreter:
             games=games,
             venue=venue,
             competition_name=competition_name,
+            opponent_name=opponent_name,
+            kind=kind,
         )

@@ -2,10 +2,59 @@ import json
 import unittest
 from urllib.parse import parse_qs, urlparse
 
-from scoreflash.providers.api_football import ApiFootballPlayerStatisticsClient
+from scoreflash.providers.api_football import (
+    ApiFootballHeadToHeadClient,
+    ApiFootballPlayerStatisticsClient,
+)
 
 
 class ApiFootballClientTests(unittest.TestCase):
+    def test_resolves_teams_and_returns_brasileirao_head_to_head_matches(self) -> None:
+        calls: list[str] = []
+
+        def transport(url: str, headers: dict[str, str], timeout: float) -> str:
+            calls.append(url)
+            endpoint = urlparse(url).path.lstrip("/")
+            query = parse_qs(urlparse(url).query)
+            if endpoint == "teams":
+                name = query["search"][0]
+                response = (
+                    {"response": [{"team": {"id": 1, "name": "Gremio", "country": "Brazil"}}]}
+                    if name == "gremio"
+                    else {"response": [{"team": {"id": 2, "name": "Vasco DA Gama", "country": "Brazil"}}]}
+                )
+                return json.dumps(response)
+            self.assertEqual(endpoint, "fixtures/headtohead")
+            return json.dumps(
+                {
+                    "response": [
+                        {
+                            "fixture": {"id": 701, "date": "2026-09-10T19:00:00+00:00", "status": {"short": "FT"}},
+                            "teams": {
+                                "home": {"id": 1, "name": "Gremio"},
+                                "away": {"id": 2, "name": "Vasco DA Gama"},
+                            },
+                            "goals": {"home": 2, "away": 1},
+                            "league": {"country": "Brazil", "name": "Serie A"},
+                        }
+                    ]
+                }
+            )
+
+        history = ApiFootballHeadToHeadClient("test-key", transport=transport).recent_matches(
+            "gremio",
+            "vasco",
+            games=5,
+            competition_name="campeonato brasileiro",
+        )
+
+        self.assertEqual(history.team.name, "Gremio")
+        self.assertEqual(history.opponent.name, "Vasco DA Gama")
+        self.assertEqual(history.matches[0].statistics["goals"], (2.0, 1.0))
+        parameters = parse_qs(urlparse(calls[-1]).query)
+        self.assertEqual(parameters["h2h"], ["1-2"])
+        self.assertEqual(parameters["league"], ["71"])
+
     def test_resolves_player_and_parses_verified_fixture_statistics(self) -> None:
         calls: list[tuple[str, dict[str, str]]] = []
         responses = {

@@ -9,6 +9,8 @@ from ..models import Match, StatisticQuery, StatisticResult
 from ..normalization import normalize_text
 
 _METRIC_ALIASES = {
+    "gols": "goals",
+    "gol": "goals",
     "finalizacoes": "total_de_finalizacoes",
     "chutes": "total_de_finalizacoes",
     "shots": "total_de_finalizacoes",

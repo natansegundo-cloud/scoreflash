@@ -20,7 +20,7 @@ scoreflash = "scoreflash.cli:main"
 scoreflash-api = "scoreflash.api:run"
 
 [tool.vercel]
-entrypoint = "scoreflash.api:app"
+entrypoint = "app:app"
 
 [project.optional-dependencies]
 test = [

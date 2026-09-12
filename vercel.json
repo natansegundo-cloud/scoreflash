@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "functions": {
-    "src/scoreflash/api.py": {
+    "app.py": {
       "maxDuration": 30,
       "excludeFiles": "{tests/**,web/**,.venv/**,data/**}"
     }

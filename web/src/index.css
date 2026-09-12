@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+:root {
+  color: #edf0eb;
+  background: #101416;
+  font-family: "Aptos", "Segoe UI Variable", "Helvetica Neue", Arial, sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  min-width: 320px;
+  margin: 0;
+  background: #101416;
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+button,
+textarea,
+input {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+button:focus-visible,
+a:focus-visible,
+textarea:focus-visible,
+input:focus-visible {
+  outline: 2px solid #f3eee5;
+  outline-offset: 3px;
+}
+
+.font-display {
+  font-family: "Aptos Display", Aptos, "Segoe UI Variable", "Helvetica Neue", sans-serif;
+  font-weight: 720;
+}
+
+::selection {
+  color: #101416;
+  background: #e4524b;
+}
+
+@media (max-width: 639px) {
+  input,
+  textarea {
+    font-size: 16px;
+  }
+}

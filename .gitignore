@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+web/.env
+web/.env.local
+.coverage
+htmlcov/
+data/*.sqlite3
+data/*.db
+web/node_modules/
+web/dist/

@@ -111,3 +111,52 @@ class ApiFootballClientTests(unittest.TestCase):
         self.assertEqual(statistics[0].yellow_cards, 1)
         self.assertEqual(calls[0][1]["x-apisports-key"], "test-key")
         self.assertEqual(parse_qs(urlparse(calls[1][0]).query)["team"], ["127"])
+
+    def test_resolves_player_statistics_without_the_team_name(self) -> None:
+        responses = {
+            "players": {
+                "response": [
+                    {
+                        "player": {"id": 88, "name": "Jude Bellingham"},
+                        "statistics": [{"team": {"id": 541, "name": "Real Madrid"}}],
+                    }
+                ]
+            },
+            "fixtures": {
+                "response": [
+                    {
+                        "fixture": {"id": 701, "date": "2026-09-10T19:00:00+00:00", "status": {"short": "FT"}},
+                        "teams": {"home": {"name": "Real Madrid"}, "away": {"name": "Barcelona"}},
+                        "league": {"name": "La Liga"},
+                    }
+                ]
+            },
+            "fixtures/players": {
+                "response": [
+                    {
+                        "players": [
+                            {
+                                "player": {"id": 88, "name": "Jude Bellingham"},
+                                "statistics": [
+                                    {
+                                        "games": {"minutes": 85, "rating": "7.4"},
+                                        "shots": {"total": 3, "on": 2},
+                                        "fouls": {"committed": 0, "drawn": 1},
+                                        "cards": {"yellow": 0, "red": 0},
+                                    }
+                                ],
+                            }
+                        ]
+                    }
+                ]
+            },
+        }
+
+        def transport(url: str, headers: dict[str, str], timeout: float) -> str:
+            return json.dumps(responses[urlparse(url).path.lstrip("/")])
+
+        statistics = ApiFootballPlayerStatisticsClient(
+            "test-key", transport=transport
+        ).recent_statistics("Bellingham Jude", games=3)
+
+        self.assertEqual(statistics[0].shots_on_target, 2)

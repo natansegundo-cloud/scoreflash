@@ -11,6 +11,18 @@ from scoreflash.services.player_opportunities import PlayerOpportunityService
 
 class FakePlayerSearch:
     def search_players(self, query: str, *, limit: int = 10) -> tuple[SearchPlayer, ...]:
+        if query == "jude bellingham":
+            return (
+                SearchPlayer(
+                    external_id="JudeBellingham",
+                    name="Jude Bellingham",
+                    slug="jude-bellingham",
+                    position="Meio-campista",
+                    country="Inglaterra",
+                    team_external_id="RealMadrid",
+                    team_name="Real Madrid",
+                ),
+            )
         if query != "leo ortiz":
             return ()
         return (
@@ -118,3 +130,20 @@ class PlayerOpportunityTests(unittest.TestCase):
         self.assertEqual(result.average_metric, 1.2)
         self.assertEqual(result.hit_rate, 80.0)
         self.assertEqual(len(result.individual_matches), 5)
+
+    def test_calculates_a_player_average_without_requiring_the_team_in_question(self) -> None:
+        service = PlayerOpportunityService(
+            discovery=PlayerDiscoveryService(FakePlayerSearch()),
+            individual_statistics=FakeIndividualStatistics(),
+        )
+
+        result = service.evaluate_statistic(
+            "Jude Bellingham tem media de quantos chutes no gol?"
+        )
+
+        self.assertEqual(result.status, "ready")
+        self.assertEqual(result.player, "Jude Bellingham")
+        self.assertEqual(result.team, "Real Madrid")
+        self.assertEqual(result.market, "chutes no alvo")
+        self.assertEqual(result.average_metric, 0.8)
+        self.assertIn("média de 0.80 chutes no alvo", result.answer)

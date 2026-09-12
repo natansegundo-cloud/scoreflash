@@ -43,7 +43,7 @@ class IndividualStatisticsProvider(Protocol):
     def recent_statistics(
         self,
         player_name: str,
-        team_name: str,
+        team_name: str | None = None,
         *,
         games: int = 5,
     ) -> tuple[VerifiedPlayerMatchStatistics, ...]: ...
@@ -177,6 +177,41 @@ class PlayerOpportunityService:
         """Compatibilidade temporária com a etapa inicial de finalizações."""
         return self.evaluate(question, team)
 
+    def evaluate_statistic(self, question: str) -> PlayerOpportunityResult:
+        """Responde uma média individual quando o clube não foi informado."""
+        player = self._discovery.resolve_without_team(question)
+        market = self._market_for_question(question)
+        verified = self._verified_statistics(player)
+        team_name = player.team_name or "equipe atual"
+        if isinstance(verified, tuple):
+            return self._build_statistic_result(player, team_name, market, verified)
+
+        status = "needs_provider_key" if verified is None else "provider_unavailable"
+        reason = (
+            "Configure a API-Football para consultar as estatísticas individuais verificadas."
+            if verified is None
+            else "A fonte de estatísticas individuais não respondeu nesta tentativa."
+        )
+        return PlayerOpportunityResult(
+            kind="player_opportunity",
+            answer=f"Ainda não consegui calcular a média de {market.label} de {player.name}.",
+            player=player.name,
+            team=team_name,
+            market=market.label,
+            status=status,
+            recommendation="sem dados",
+            threshold=1,
+            average_metric=None,
+            hit_rate=None,
+            appearances_considered=0,
+            average_minutes=None,
+            average_rating=None,
+            next_match=None,
+            appearances=(),
+            individual_matches=(),
+            insight=reason,
+        )
+
     def _next_match(self, team: Team) -> dict[str, object] | None:
         if not team.participant_slug:
             return None
@@ -203,14 +238,85 @@ class PlayerOpportunityService:
     def _verified_statistics(
         self,
         player: Player,
-        team: Team,
+        team: Team | None = None,
     ) -> tuple[VerifiedPlayerMatchStatistics, ...] | ProviderAccessError | None:
         if self._individual_statistics is None:
             return None
         try:
-            return self._individual_statistics.recent_statistics(player.name, team.name, games=5)
+            return self._individual_statistics.recent_statistics(
+                player.name,
+                team.name if team is not None else None,
+                games=5,
+            )
         except ProviderAccessError as error:
             return error
+
+    @staticmethod
+    def _build_statistic_result(
+        player: Player,
+        team_name: str,
+        market: PlayerMarket,
+        statistics: Sequence[VerifiedPlayerMatchStatistics],
+    ) -> PlayerOpportunityResult:
+        values = [getattr(statistic, market.key) for statistic in statistics]
+        numeric_values = [value for value in values if value is not None]
+        minutes = [statistic.minutes for statistic in statistics if statistic.minutes is not None]
+        ratings = [statistic.rating for statistic in statistics if statistic.rating is not None]
+        individual_matches = tuple(
+            PlayerOpportunityService._serialize_verified_match(statistic)
+            for statistic in statistics
+        )
+        if len(numeric_values) < 3:
+            return PlayerOpportunityResult(
+                kind="player_opportunity",
+                answer=(
+                    f"A fonte encontrou apenas {len(numeric_values)} jogo(s) com {market.label} "
+                    f"verificáveis para {player.name}."
+                ),
+                player=player.name,
+                team=team_name,
+                market=market.label,
+                status="insufficient_coverage",
+                recommendation="sem dados",
+                threshold=1,
+                average_metric=None,
+                hit_rate=None,
+                appearances_considered=len(statistics),
+                average_minutes=round(mean(minutes), 1) if minutes else None,
+                average_rating=round(mean(ratings), 2) if ratings else None,
+                next_match=None,
+                appearances=(),
+                individual_matches=individual_matches,
+                insight="São necessários ao menos três jogos com a métrica individual para informar uma média confiável.",
+            )
+
+        average = round(mean(numeric_values), 2)
+        hit_rate = round(sum(value >= 1 for value in numeric_values) / len(numeric_values) * 100, 1)
+        return PlayerOpportunityResult(
+            kind="player_opportunity",
+            answer=(
+                f"Nos últimos {len(numeric_values)} jogos com dados individuais verificados, "
+                f"{player.name} teve média de {average:.2f} {market.label} por partida."
+            ),
+            player=player.name,
+            team=team_name,
+            market=market.label,
+            status="ready",
+            recommendation="dados verificados",
+            threshold=1,
+            average_metric=average,
+            hit_rate=hit_rate,
+            appearances_considered=len(statistics),
+            average_minutes=round(mean(minutes), 1) if minutes else None,
+            average_rating=round(mean(ratings), 2) if ratings else None,
+            next_match=None,
+            appearances=(),
+            individual_matches=individual_matches,
+            insight=(
+                f"A média considera somente os {len(numeric_values)} jogos em que a fonte registrou "
+                f"{market.label} de forma individual."
+            ),
+        )
 
     @staticmethod
     def _market_for_question(question: str) -> PlayerMarket:

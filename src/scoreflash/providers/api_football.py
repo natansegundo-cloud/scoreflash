@@ -97,6 +97,12 @@ def _as_float(value: object) -> float | None:
     return None
 
 
+def _same_player_name(first: str, second: str) -> bool:
+    first_words = normalize_text(first).split()
+    second_words = normalize_text(second).split()
+    return bool(first_words) and (first_words == second_words or sorted(first_words) == sorted(second_words))
+
+
 def _provider_error_detail(errors: object) -> str:
     if isinstance(errors, dict):
         messages = [str(value).strip() for value in errors.values() if str(value).strip()]
@@ -129,7 +135,7 @@ class ApiFootballPlayerStatisticsClient:
     def recent_statistics(
         self,
         player_name: str,
-        team_name: str,
+        team_name: str | None = None,
         *,
         games: int = 5,
     ) -> tuple[VerifiedPlayerMatchStatistics, ...]:
@@ -144,36 +150,45 @@ class ApiFootballPlayerStatisticsClient:
                 statistics.append(statistic)
         return tuple(sorted(statistics, key=lambda item: item.date, reverse=True))
 
-    def _resolve_player(self, player_name: str, team_name: str) -> _ApiFootballPlayer:
-        response = self._request("players", {"search": player_name})
-        target_player = normalize_text(player_name)
-        target_team = normalize_text(team_name)
+    def _resolve_player(self, player_name: str, team_name: str | None = None) -> _ApiFootballPlayer:
+        target_team = normalize_text(team_name or "")
         candidates: list[_ApiFootballPlayer] = []
-        for item in response:
-            if not isinstance(item, dict):
-                continue
-            player = item.get("player")
-            if not isinstance(player, dict) or normalize_text(str(player.get("name", ""))) != target_player:
-                continue
-            entries = item.get("statistics")
-            if not isinstance(entries, list):
-                continue
-            for entry in entries:
-                if not isinstance(entry, dict):
+        search_terms = [player_name]
+        reversed_name = " ".join(reversed(player_name.split()))
+        if reversed_name and reversed_name.casefold() != player_name.casefold():
+            search_terms.append(reversed_name)
+        for search_term in search_terms:
+            response = self._request("players", {"search": search_term})
+            for item in response:
+                if not isinstance(item, dict):
                     continue
-                team = entry.get("team")
-                if not isinstance(team, dict) or normalize_text(str(team.get("name", ""))) != target_team:
+                player = item.get("player")
+                if not isinstance(player, dict) or not _same_player_name(str(player.get("name", "")), player_name):
                     continue
-                player_id = _as_int(player.get("id"))
-                team_id = _as_int(team.get("id"))
-                name = player.get("name")
-                resolved_team_name = team.get("name")
-                if player_id is None or team_id is None or not isinstance(name, str) or not isinstance(resolved_team_name, str):
+                entries = item.get("statistics")
+                if not isinstance(entries, list):
                     continue
-                candidates.append(_ApiFootballPlayer(player_id, name, team_id, resolved_team_name))
+                for entry in entries:
+                    if not isinstance(entry, dict):
+                        continue
+                    team = entry.get("team")
+                    if not isinstance(team, dict):
+                        continue
+                    if target_team and normalize_text(str(team.get("name", ""))) != target_team:
+                        continue
+                    player_id = _as_int(player.get("id"))
+                    team_id = _as_int(team.get("id"))
+                    name = player.get("name")
+                    resolved_team_name = team.get("name")
+                    if player_id is None or team_id is None or not isinstance(name, str) or not isinstance(resolved_team_name, str):
+                        continue
+                    candidates.append(_ApiFootballPlayer(player_id, name, team_id, resolved_team_name))
+            if candidates:
+                return candidates[0]
         if not candidates:
             raise ProviderAccessError(
-                f"A fonte de estatísticas individuais não encontrou {player_name} no {team_name}."
+                f"A fonte de estatísticas individuais não encontrou {player_name}"
+                f"{f' no {team_name}' if team_name else ''}."
             )
         return candidates[0]
 

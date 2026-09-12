@@ -19,9 +19,10 @@ class PlayerDiscoveryService:
 
     _IGNORED_WORDS = frozenset(
         {
-            "a", "ao", "amanha", "boa", "casa", "com", "da", "das", "de", "do", "dos",
-            "e", "eh", "em", "finalizar", "finalizacao", "finalizacoes", "fora", "ideia",
-            "jogo", "jogos", "na", "no", "nos", "o", "os", "para", "pra", "prop", "uma", "vale",
+            "a", "ao", "alvo", "amanha", "boa", "casa", "chute", "chutes", "com", "da", "das", "de",
+            "do", "dos", "e", "eh", "em", "finalizar", "finalizacao", "finalizacoes", "fora", "gol",
+            "gols", "ideia", "jogo", "jogos", "media", "na", "no", "nos", "o", "os", "para", "pra",
+            "prop", "quantos", "tem", "uma", "vale",
         }
     )
 
@@ -36,23 +37,26 @@ class PlayerDiscoveryService:
                     continue
                 if not self._belongs_to_team(result, team):
                     continue
-                return Player(
-                    provider="flashscore",
-                    external_id=result.external_id,
-                    name=result.name,
-                    participant_slug=result.slug,
-                    position=result.position,
-                    country=result.country,
-                    team_external_id=result.team_external_id,
-                    team_name=result.team_name,
-                )
+                return self._player_from_result(result)
         raise PlayerNotFoundError(
             f"Não consegui confirmar o jogador citado no {team.name}. "
             "Tente escrever nome e sobrenome, por exemplo: Léo Ortiz no Flamengo."
         )
 
-    def _candidate_queries(self, normalized_question: str, team: Team) -> tuple[str, ...]:
-        team_words = set(normalize_text(team.name).split())
+    def resolve_without_team(self, question: str) -> Player:
+        """Encontra um atleta pelo nome quando a pergunta não cita o clube."""
+        normalized_question = normalize_text(question)
+        for candidate in self._candidate_queries(normalized_question, None):
+            for result in self._search.search_players(candidate):
+                if self._matches_question(result, normalized_question):
+                    return self._player_from_result(result)
+        raise PlayerNotFoundError(
+            "Não consegui confirmar o jogador citado. Tente escrever nome e sobrenome, "
+            "como: Jude Bellingham tem média de chutes no gol?"
+        )
+
+    def _candidate_queries(self, normalized_question: str, team: Team | None) -> tuple[str, ...]:
+        team_words = set(normalize_text(team.name).split()) if team is not None else set()
         words = [
             word for word in normalized_question.split()
             if len(word) >= 3 and word not in self._IGNORED_WORDS
@@ -65,6 +69,19 @@ class PlayerDiscoveryService:
                 if candidate not in candidates:
                     candidates.append(candidate)
         return tuple(candidates[:15])
+
+    @staticmethod
+    def _player_from_result(result: SearchPlayer) -> Player:
+        return Player(
+            provider="flashscore",
+            external_id=result.external_id,
+            name=result.name,
+            participant_slug=result.slug,
+            position=result.position,
+            country=result.country,
+            team_external_id=result.team_external_id,
+            team_name=result.team_name,
+        )
 
     @staticmethod
     def _matches_question(result: SearchPlayer, normalized_question: str) -> bool:

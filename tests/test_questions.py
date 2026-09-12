@@ -88,3 +88,10 @@ class QuestionInterpreterTests(unittest.TestCase):
                 "O Léo Ortiz vale cartão amarelo amanhã pelo Flamengo?"
             )
         )
+
+    def test_recognizes_an_unscoped_player_statistic_question(self) -> None:
+        self.assertTrue(
+            QueryService._is_player_statistic_question(
+                "Jude Bellingham tem media de quantos chutes no gol?"
+            )
+        )

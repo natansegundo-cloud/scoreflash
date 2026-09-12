@@ -11,6 +11,7 @@ from typing import Protocol
 from ..config import Settings
 from ..errors import (
     LLMUnavailableError,
+    PlayerNotFoundError,
     ProviderAccessError,
     QuestionInterpretationError,
     TeamConfigurationError,
@@ -224,7 +225,10 @@ class QueryService:
 
     def execute(self, question: str) -> QueryResult | HeadToHeadResult | PlayerOpportunityResult:
         if self._is_player_opportunity_question(question):
-            team = self._resolve_team(question, "")
+            try:
+                team = self._resolve_team(question, "")
+            except TeamNotFoundError:
+                return self._execute_unscoped_player_statistic(question)
             cache_key = "|".join(("player-opportunity", team.external_id, normalize_text(question)))
             cached = self._cache.get(cache_key)
             if cached is not None:
@@ -246,7 +250,15 @@ class QueryService:
             intent = self._fallback_interpreter.parse(question, aliases)
         if intent.kind == "head_to_head":
             return self._execute_head_to_head(intent)
-        team = self._resolve_team(question, intent.team_name)
+        try:
+            team = self._resolve_team(question, intent.team_name)
+        except TeamNotFoundError as team_error:
+            if self._is_player_statistic_question(question):
+                try:
+                    return self._execute_unscoped_player_statistic(question)
+                except PlayerNotFoundError:
+                    raise team_error
+            raise
         if not team.participant_slug:
             raise TeamConfigurationError(f"Ainda não há slug de busca para {team.name}.")
 
@@ -294,6 +306,15 @@ class QueryService:
             confidence=confidence_for_sample(len(statistic.matches_used)),
         )
         self._cache.put(cache_key, result.as_dict(), timedelta(minutes=8))
+        return result
+
+    def _execute_unscoped_player_statistic(self, question: str) -> PlayerOpportunityResult:
+        cache_key = "|".join(("player-statistic", normalize_text(question)))
+        cached = self._cache.get(cache_key)
+        if cached is not None:
+            return PlayerOpportunityResult(**cached)
+        result = self._player_opportunities.evaluate_statistic(question)
+        self._cache.put(cache_key, result.as_dict(), timedelta(hours=4))
         return result
 
     def _execute_head_to_head(self, intent: QuestionIntent) -> HeadToHeadResult:
@@ -402,6 +423,21 @@ class QueryService:
         return asks_for_market and asks_for_recommendation
 
     _is_player_finalization_question = _is_player_opportunity_question
+
+    @staticmethod
+    def _is_player_statistic_question(question: str) -> bool:
+        normalized = normalize_text(question)
+        asks_for_market = any(
+            marker in normalized
+            for marker in ("finaliza", "chute", "falta", "cartao")
+        )
+        has_player_verb = bool(
+            re.search(r"\b(?:tem|possui|fez|acertou|registrou)\b", normalized)
+        )
+        has_named_subject = bool(
+            re.search(r"\bde\s+[a-z]{3,}(?:\s+[a-z]{3,})+\b", normalized)
+        )
+        return asks_for_market and (has_player_verb or "jogador" in normalized or "atleta" in normalized or has_named_subject)
 
     def close(self) -> None:
         self._teams.close()

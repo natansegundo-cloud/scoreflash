@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
@@ -159,7 +159,10 @@ class ApiFootballPlayerStatisticsClient:
         # O plano gratuito não libera o parâmetro ``last``. Selecionamos a
         # amostra recente localmente antes de consultar as estatísticas.
         fixtures = self._recent_finished_fixtures(
-            self._request("fixtures", {"team": player.team_id}),
+            self._request(
+                "fixtures",
+                {"team": player.team_id, "season": self._current_season()},
+            ),
             games,
         )
         statistics: list[VerifiedPlayerMatchStatistics] = []
@@ -243,6 +246,12 @@ class ApiFootballPlayerStatisticsClient:
                 reverse=True,
             )[:games]
         )
+
+    @staticmethod
+    def _current_season() -> int:
+        """Retorna o ano de início da temporada de futebol em curso."""
+        today = datetime.now(UTC).date()
+        return today.year if today.month >= 7 else today.year - 1
 
     @staticmethod
     def _fixture_date_key(fixture: Mapping[str, object]) -> str:

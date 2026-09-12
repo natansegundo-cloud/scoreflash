@@ -115,7 +115,9 @@ class ApiFootballClientTests(unittest.TestCase):
         player_call = next(url for url, _ in calls if urlparse(url).path.endswith("/players"))
         self.assertEqual(parse_qs(urlparse(player_call).query)["team"], ["127"])
         fixture_call = next(url for url, _ in calls if urlparse(url).path.endswith("/fixtures"))
-        self.assertNotIn("last", parse_qs(urlparse(fixture_call).query))
+        fixture_parameters = parse_qs(urlparse(fixture_call).query)
+        self.assertNotIn("last", fixture_parameters)
+        self.assertIn("season", fixture_parameters)
 
     def test_resolves_player_statistics_with_the_resolved_current_team(self) -> None:
         responses = {

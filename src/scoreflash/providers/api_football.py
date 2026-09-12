@@ -36,6 +36,7 @@ class VerifiedPlayerMatchStatistics:
     fouls_drawn: int | None
     yellow_cards: int | None
     red_cards: int | None
+    season: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -132,6 +133,7 @@ class ApiFootballPlayerStatisticsClient:
 
     BASE_URL = "https://v3.football.api-sports.io"
     FINISHED_STATUSES = frozenset({"FT", "AET", "PEN"})
+    FREE_FALLBACK_SEASON = 2024
 
     def __init__(
         self,
@@ -159,10 +161,7 @@ class ApiFootballPlayerStatisticsClient:
         # O plano gratuito não libera o parâmetro ``last``. Selecionamos a
         # amostra recente localmente antes de consultar as estatísticas.
         fixtures = self._recent_finished_fixtures(
-            self._request(
-                "fixtures",
-                {"team": player.team_id, "season": self._current_season()},
-            ),
+            self._fixtures_for_available_season(player.team_id),
             games,
         )
         statistics: list[VerifiedPlayerMatchStatistics] = []
@@ -253,6 +252,23 @@ class ApiFootballPlayerStatisticsClient:
         today = datetime.now(UTC).date()
         return today.year if today.month >= 7 else today.year - 1
 
+    def _fixtures_for_available_season(self, team_id: int) -> list[object]:
+        season = self._current_season()
+        try:
+            return self._request("fixtures", {"team": team_id, "season": season})
+        except ProviderAccessError as error:
+            if season <= self.FREE_FALLBACK_SEASON or not self._is_free_season_restriction(error):
+                raise
+            return self._request(
+                "fixtures",
+                {"team": team_id, "season": self.FREE_FALLBACK_SEASON},
+            )
+
+    @staticmethod
+    def _is_free_season_restriction(error: ProviderAccessError) -> bool:
+        message = normalize_text(str(error))
+        return "free plans" in message and "season" in message
+
     @staticmethod
     def _fixture_date_key(fixture: Mapping[str, object]) -> str:
         fixture_data = fixture.get("fixture")
@@ -322,6 +338,7 @@ class ApiFootballPlayerStatisticsClient:
                     fouls_drawn=_as_int(fouls.get("drawn")),
                     yellow_cards=_as_int(cards.get("yellow")),
                     red_cards=_as_int(cards.get("red")),
+                    season=_as_int(league.get("season")) if isinstance(league, dict) else None,
                 )
         return None
 

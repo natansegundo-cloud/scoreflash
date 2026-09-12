@@ -293,11 +293,13 @@ class PlayerOpportunityService:
 
         average = round(mean(numeric_values), 2)
         hit_rate = round(sum(value >= 1 for value in numeric_values) / len(numeric_values) * 100, 1)
+        observed_seasons = sorted({statistic.season for statistic in statistics if statistic.season is not None})
+        season_note = f" na temporada {observed_seasons[-1]}" if len(observed_seasons) == 1 else ""
         return PlayerOpportunityResult(
             kind="player_opportunity",
             answer=(
                 f"Nos últimos {len(numeric_values)} jogos com dados individuais verificados, "
-                f"{player.name} teve média de {average:.2f} {market.label} por partida."
+                f"{player.name} teve média de {average:.2f} {market.label} por partida{season_note}."
             ),
             player=player.name,
             team=team_name,

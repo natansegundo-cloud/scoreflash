@@ -1,6 +1,7 @@
 import json
 import unittest
 from urllib.parse import parse_qs, urlparse
+from unittest.mock import patch
 
 from scoreflash.providers.api_football import (
     ApiFootballHeadToHeadClient,
@@ -169,3 +170,59 @@ class ApiFootballClientTests(unittest.TestCase):
         ).recent_statistics("Bellingham Jude", "Real Madrid", games=3)
 
         self.assertEqual(statistics[0].shots_on_target, 2)
+
+    def test_falls_back_to_the_latest_free_season_for_player_statistics(self) -> None:
+        fixture_seasons: list[str] = []
+
+        def transport(url: str, headers: dict[str, str], timeout: float) -> str:
+            endpoint = urlparse(url).path.lstrip("/")
+            parameters = parse_qs(urlparse(url).query)
+            if endpoint == "teams":
+                return json.dumps({"response": [{"team": {"id": 541, "name": "Real Madrid"}}]})
+            if endpoint == "players":
+                return json.dumps({"response": [{"player": {"id": 88, "name": "Jude Bellingham"}}]})
+            if endpoint == "fixtures":
+                season = parameters["season"][0]
+                fixture_seasons.append(season)
+                if season == "2026":
+                    return json.dumps({"errors": {"season": "Free plans do not have access to this season"}})
+                return json.dumps(
+                    {
+                        "response": [
+                            {
+                                "fixture": {"id": 701, "date": "2024-12-10T19:00:00+00:00", "status": {"short": "FT"}},
+                                "teams": {"home": {"name": "Real Madrid"}, "away": {"name": "Barcelona"}},
+                                "league": {"name": "La Liga", "season": 2024},
+                            }
+                        ]
+                    }
+                )
+            self.assertEqual(endpoint, "fixtures/players")
+            return json.dumps(
+                {
+                    "response": [
+                        {
+                            "players": [
+                                {
+                                    "player": {"id": 88, "name": "Jude Bellingham"},
+                                    "statistics": [
+                                        {
+                                            "games": {"minutes": 90, "rating": "7.5"},
+                                            "shots": {"total": 2, "on": 1},
+                                            "fouls": {"committed": 0, "drawn": 0},
+                                            "cards": {"yellow": 0, "red": 0},
+                                        }
+                                    ],
+                                }
+                            ]
+                        }
+                    ]
+                }
+            )
+
+        client = ApiFootballPlayerStatisticsClient("test-key", transport=transport)
+        with patch.object(client, "_current_season", return_value=2026):
+            statistics = client.recent_statistics("Jude Bellingham", "Real Madrid", games=3)
+
+        self.assertEqual(fixture_seasons, ["2026", "2024"])
+        self.assertEqual(statistics[0].season, 2024)

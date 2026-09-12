@@ -117,7 +117,7 @@ class ApiFootballClientTests(unittest.TestCase):
             "players": {
                 "response": [
                     {
-                        "player": {"id": 88, "name": "Jude Bellingham"},
+                        "player": {"id": 88, "name": "J. Bellingham"},
                         "statistics": [{"team": {"id": 541, "name": "Real Madrid"}}],
                     }
                 ]

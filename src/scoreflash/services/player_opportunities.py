@@ -190,7 +190,7 @@ class PlayerOpportunityService:
         reason = (
             "Configure a API-Football para consultar as estatísticas individuais verificadas."
             if verified is None
-            else "A fonte de estatísticas individuais não respondeu nesta tentativa."
+            else str(verified)
         )
         return PlayerOpportunityResult(
             kind="player_opportunity",

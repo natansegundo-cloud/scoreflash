@@ -100,7 +100,21 @@ def _as_float(value: object) -> float | None:
 def _same_player_name(first: str, second: str) -> bool:
     first_words = normalize_text(first).split()
     second_words = normalize_text(second).split()
-    return bool(first_words) and (first_words == second_words or sorted(first_words) == sorted(second_words))
+    if not first_words or not second_words:
+        return False
+    if first_words == second_words or sorted(first_words) == sorted(second_words):
+        return True
+    shared_words = set(first_words).intersection(second_words)
+    unmatched_first = [word for word in first_words if word not in shared_words]
+    unmatched_second = [word for word in second_words if word not in shared_words]
+    return (
+        bool(shared_words)
+        and len(unmatched_first) == len(unmatched_second)
+        and all(
+            first_word[0] == second_word[0]
+            for first_word, second_word in zip(unmatched_first, unmatched_second, strict=True)
+        )
+    )
 
 
 def _provider_error_detail(errors: object) -> str:

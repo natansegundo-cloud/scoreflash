@@ -169,7 +169,6 @@ class ApiFootballPlayerStatisticsClient:
             raise ProviderAccessError(
                 "A consulta individual precisa do clube atual do jogador para localizar as estatísticas."
             )
-        target_team = normalize_text(team_name or "")
         team_id = self._resolve_team_id(team_name)
         candidates: list[_ApiFootballPlayer] = []
         search_terms = [player_name]
@@ -184,24 +183,11 @@ class ApiFootballPlayerStatisticsClient:
                 player = item.get("player")
                 if not isinstance(player, dict) or not _same_player_name(str(player.get("name", "")), player_name):
                     continue
-                entries = item.get("statistics")
-                if not isinstance(entries, list):
+                player_id = _as_int(player.get("id"))
+                name = player.get("name")
+                if player_id is None or not isinstance(name, str):
                     continue
-                for entry in entries:
-                    if not isinstance(entry, dict):
-                        continue
-                    team = entry.get("team")
-                    if not isinstance(team, dict):
-                        continue
-                    if target_team and normalize_text(str(team.get("name", ""))) != target_team:
-                        continue
-                    player_id = _as_int(player.get("id"))
-                    team_id = _as_int(team.get("id"))
-                    name = player.get("name")
-                    resolved_team_name = team.get("name")
-                    if player_id is None or team_id is None or not isinstance(name, str) or not isinstance(resolved_team_name, str):
-                        continue
-                    candidates.append(_ApiFootballPlayer(player_id, name, team_id, resolved_team_name))
+                candidates.append(_ApiFootballPlayer(player_id, name, team_id, team_name))
             if candidates:
                 return candidates[0]
         if not candidates:

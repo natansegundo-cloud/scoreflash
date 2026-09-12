@@ -66,7 +66,6 @@ class ApiFootballClientTests(unittest.TestCase):
                 "response": [
                     {
                         "player": {"id": 88, "name": "Léo Ortiz"},
-                        "statistics": [{"team": {"id": 127, "name": "Flamengo"}}],
                     }
                 ]
             },
@@ -125,7 +124,6 @@ class ApiFootballClientTests(unittest.TestCase):
                 "response": [
                     {
                         "player": {"id": 88, "name": "J. Bellingham"},
-                        "statistics": [{"team": {"id": 541, "name": "Real Madrid"}}],
                     }
                 ]
             },

@@ -165,14 +165,19 @@ class ApiFootballPlayerStatisticsClient:
         return tuple(sorted(statistics, key=lambda item: item.date, reverse=True))
 
     def _resolve_player(self, player_name: str, team_name: str | None = None) -> _ApiFootballPlayer:
+        if not team_name:
+            raise ProviderAccessError(
+                "A consulta individual precisa do clube atual do jogador para localizar as estatísticas."
+            )
         target_team = normalize_text(team_name or "")
+        team_id = self._resolve_team_id(team_name)
         candidates: list[_ApiFootballPlayer] = []
         search_terms = [player_name]
         reversed_name = " ".join(reversed(player_name.split()))
         if reversed_name and reversed_name.casefold() != player_name.casefold():
             search_terms.append(reversed_name)
         for search_term in search_terms:
-            response = self._request("players", {"search": search_term})
+            response = self._request("players", {"search": search_term, "team": team_id})
             for item in response:
                 if not isinstance(item, dict):
                     continue
@@ -205,6 +210,20 @@ class ApiFootballPlayerStatisticsClient:
                 f"{f' no {team_name}' if team_name else ''}."
             )
         return candidates[0]
+
+    def _resolve_team_id(self, team_name: str) -> int:
+        target_team = normalize_text(team_name)
+        for item in self._request("teams", {"search": team_name}):
+            if not isinstance(item, dict):
+                continue
+            team = item.get("team")
+            team_id = _as_int(team.get("id")) if isinstance(team, dict) else None
+            candidate_name = team.get("name") if isinstance(team, dict) else None
+            if team_id is not None and isinstance(candidate_name, str) and normalize_text(candidate_name) == target_team:
+                return team_id
+        raise ProviderAccessError(
+            f"A fonte de estatísticas individuais não encontrou a equipe {team_name}."
+        )
 
     def _finished_fixtures(self, response: list[object]) -> tuple[dict[str, object], ...]:
         fixtures: list[dict[str, object]] = []

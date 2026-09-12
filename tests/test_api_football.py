@@ -59,6 +59,9 @@ class ApiFootballClientTests(unittest.TestCase):
     def test_resolves_player_and_parses_verified_fixture_statistics(self) -> None:
         calls: list[tuple[str, dict[str, str]]] = []
         responses = {
+            "teams": {
+                "response": [{"team": {"id": 127, "name": "Flamengo"}}]
+            },
             "players": {
                 "response": [
                     {
@@ -110,10 +113,14 @@ class ApiFootballClientTests(unittest.TestCase):
         self.assertEqual(statistics[0].fouls_committed, 1)
         self.assertEqual(statistics[0].yellow_cards, 1)
         self.assertEqual(calls[0][1]["x-apisports-key"], "test-key")
-        self.assertEqual(parse_qs(urlparse(calls[1][0]).query)["team"], ["127"])
+        player_call = next(url for url, _ in calls if urlparse(url).path.endswith("/players"))
+        self.assertEqual(parse_qs(urlparse(player_call).query)["team"], ["127"])
 
-    def test_resolves_player_statistics_without_the_team_name(self) -> None:
+    def test_resolves_player_statistics_with_the_resolved_current_team(self) -> None:
         responses = {
+            "teams": {
+                "response": [{"team": {"id": 541, "name": "Real Madrid"}}]
+            },
             "players": {
                 "response": [
                     {
@@ -157,6 +164,6 @@ class ApiFootballClientTests(unittest.TestCase):
 
         statistics = ApiFootballPlayerStatisticsClient(
             "test-key", transport=transport
-        ).recent_statistics("Bellingham Jude", games=3)
+        ).recent_statistics("Bellingham Jude", "Real Madrid", games=3)
 
         self.assertEqual(statistics[0].shots_on_target, 2)

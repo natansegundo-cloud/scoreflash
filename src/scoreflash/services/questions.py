@@ -309,12 +309,13 @@ class QueryService:
         return result
 
     def _execute_unscoped_player_statistic(self, question: str) -> PlayerOpportunityResult:
-        cache_key = "|".join(("player-statistic", normalize_text(question)))
+        cache_key = "|".join(("player-statistic-v2", normalize_text(question)))
         cached = self._cache.get(cache_key)
         if cached is not None:
             return PlayerOpportunityResult(**cached)
         result = self._player_opportunities.evaluate_statistic(question)
-        self._cache.put(cache_key, result.as_dict(), timedelta(hours=4))
+        if result.status != "provider_unavailable":
+            self._cache.put(cache_key, result.as_dict(), timedelta(hours=4))
         return result
 
     def _execute_head_to_head(self, intent: QuestionIntent) -> HeadToHeadResult:

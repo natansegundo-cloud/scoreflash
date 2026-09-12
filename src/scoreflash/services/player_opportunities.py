@@ -181,8 +181,8 @@ class PlayerOpportunityService:
         """Responde uma média individual quando o clube não foi informado."""
         player = self._discovery.resolve_without_team(question)
         market = self._market_for_question(question)
-        verified = self._verified_statistics(player)
         team_name = player.team_name or "equipe atual"
+        verified = self._verified_statistics(player, team_name=player.team_name)
         if isinstance(verified, tuple):
             return self._build_statistic_result(player, team_name, market, verified)
 
@@ -239,13 +239,14 @@ class PlayerOpportunityService:
         self,
         player: Player,
         team: Team | None = None,
+        team_name: str | None = None,
     ) -> tuple[VerifiedPlayerMatchStatistics, ...] | ProviderAccessError | None:
         if self._individual_statistics is None:
             return None
         try:
             return self._individual_statistics.recent_statistics(
                 player.name,
-                team.name if team is not None else None,
+                team.name if team is not None else team_name,
                 games=5,
             )
         except ProviderAccessError as error:

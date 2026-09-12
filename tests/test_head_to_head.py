@@ -92,4 +92,3 @@ class HeadToHeadQueryTests(unittest.TestCase):
         self.assertEqual(provider.calls, [("gremio", "vasco", 5, "brasileirao")])
         self.assertIsInstance(cached_result, HeadToHeadResult)
         self.assertTrue(cached_result.cached)
-

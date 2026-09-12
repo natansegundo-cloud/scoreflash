@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import UTC, datetime
 import unittest
 
@@ -90,6 +91,15 @@ class FakeIndividualStatistics:
         )
 
 
+class SparseIndividualStatistics(FakeIndividualStatistics):
+    def recent_statistics(self, *_: str, games: int = 5) -> tuple[VerifiedPlayerMatchStatistics, ...]:
+        statistics = super().recent_statistics(games=games)
+        return tuple(
+            statistic if index < 2 else replace(statistic, shots_on_target=None)
+            for index, statistic in enumerate(statistics)
+        )
+
+
 class PlayerOpportunityTests(unittest.TestCase):
     def test_confirms_player_team_and_explains_missing_shot_metric(self) -> None:
         team = Team("flashscore", "WjxY29qB", "Flamengo", participant_slug="flamengo")
@@ -147,3 +157,18 @@ class PlayerOpportunityTests(unittest.TestCase):
         self.assertEqual(result.market, "chutes no alvo")
         self.assertEqual(result.average_metric, 0.8)
         self.assertIn("média de 0.80 chutes no alvo", result.answer)
+
+    def test_returns_a_short_verified_player_average_instead_of_hiding_it(self) -> None:
+        service = PlayerOpportunityService(
+            discovery=PlayerDiscoveryService(FakePlayerSearch()),
+            individual_statistics=SparseIndividualStatistics(),
+        )
+
+        result = service.evaluate_statistic(
+            "Jude Bellingham tem media de quantos chutes no gol?"
+        )
+
+        self.assertEqual(result.status, "ready")
+        self.assertEqual(result.recommendation, "amostra curta")
+        self.assertEqual(result.average_metric, 1.0)
+        self.assertIn("amostra é curta", result.answer)

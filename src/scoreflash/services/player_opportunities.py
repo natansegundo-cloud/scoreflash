@@ -267,11 +267,11 @@ class PlayerOpportunityService:
             PlayerOpportunityService._serialize_verified_match(statistic)
             for statistic in statistics
         )
-        if len(numeric_values) < 3:
+        if not numeric_values:
             return PlayerOpportunityResult(
                 kind="player_opportunity",
                 answer=(
-                    f"A fonte encontrou apenas {len(numeric_values)} jogo(s) com {market.label} "
+                    f"A fonte não encontrou jogos com {market.label} "
                     f"verificáveis para {player.name}."
                 ),
                 player=player.name,
@@ -288,24 +288,26 @@ class PlayerOpportunityService:
                 next_match=None,
                 appearances=(),
                 individual_matches=individual_matches,
-                insight="São necessários ao menos três jogos com a métrica individual para informar uma média confiável.",
+                insight="A fonte não registrou a métrica individual nas partidas retornadas.",
             )
 
         average = round(mean(numeric_values), 2)
         hit_rate = round(sum(value >= 1 for value in numeric_values) / len(numeric_values) * 100, 1)
         observed_seasons = sorted({statistic.season for statistic in statistics if statistic.season is not None})
         season_note = f" na temporada {observed_seasons[-1]}" if len(observed_seasons) == 1 else ""
+        is_short_sample = len(numeric_values) < 3
         return PlayerOpportunityResult(
             kind="player_opportunity",
             answer=(
                 f"Nos últimos {len(numeric_values)} jogos com dados individuais verificados, "
                 f"{player.name} teve média de {average:.2f} {market.label} por partida{season_note}."
+                f"{' A amostra é curta e serve apenas como referência.' if is_short_sample else ''}"
             ),
             player=player.name,
             team=team_name,
             market=market.label,
             status="ready",
-            recommendation="dados verificados",
+            recommendation="amostra curta" if is_short_sample else "dados verificados",
             threshold=1,
             average_metric=average,
             hit_rate=hit_rate,
@@ -318,6 +320,7 @@ class PlayerOpportunityService:
             insight=(
                 f"A média considera somente os {len(numeric_values)} jogos em que a fonte registrou "
                 f"{market.label} de forma individual."
+                f"{' São menos de três jogos, então não é uma base para recomendação.' if is_short_sample else ''}"
             ),
         )
 

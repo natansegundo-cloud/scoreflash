@@ -97,6 +97,16 @@ def _as_float(value: object) -> float | None:
     return None
 
 
+def _provider_error_detail(errors: object) -> str:
+    if isinstance(errors, dict):
+        messages = [str(value).strip() for value in errors.values() if str(value).strip()]
+    elif isinstance(errors, list):
+        messages = [str(value).strip() for value in errors if str(value).strip()]
+    else:
+        messages = [str(errors).strip()] if str(errors).strip() else []
+    return " ".join(messages[:2])[:300]
+
+
 class ApiFootballPlayerStatisticsClient:
     """Cliente de baixa escala para rendimento individual por partida."""
 
@@ -315,15 +325,14 @@ class ApiFootballHeadToHeadClient:
         parameters: dict[str, object] = {
             "h2h": f"{team.external_id}-{opponent.external_id}",
             # Busca uma janela maior pois o recorte de mando é aplicado depois.
-            "last": max(20, games * 4),
+            "last": max(10, games * 2),
         }
         league_id = self._league_id_for(competition_name)
-        if league_id is not None:
-            parameters["league"] = league_id
         matches = tuple(
             match
             for item in self._request("fixtures/headtohead", parameters)
             if (match := self._parse_match(item)) is not None
+            and self._belongs_to_league(item, league_id)
             and team.external_id in {match.home_team.external_id, match.away_team.external_id}
             and opponent.external_id in {match.home_team.external_id, match.away_team.external_id}
         )
@@ -333,6 +342,13 @@ class ApiFootballHeadToHeadClient:
                 f"Não encontrei confrontos encerrados entre {team.name} e {opponent.name}{competition}."
             )
         return ApiFootballHeadToHeadHistory(team=team, opponent=opponent, matches=matches)
+
+    @staticmethod
+    def _belongs_to_league(item: object, league_id: int | None) -> bool:
+        if league_id is None:
+            return True
+        league = item.get("league") if isinstance(item, dict) else None
+        return isinstance(league, dict) and _as_int(league.get("id")) == league_id
 
     def _resolve_team(self, name: str) -> Team:
         target = normalize_text(name)
@@ -456,7 +472,9 @@ class ApiFootballHeadToHeadClient:
             raise ProviderAccessError("A API-Football devolveu um formato inválido.") from error
         errors = parsed.get("errors") if isinstance(parsed, dict) else None
         if errors:
-            raise ProviderAccessError("A API-Football recusou a consulta de confronto direto.")
+            detail = _provider_error_detail(errors)
+            suffix = f" Detalhe: {detail}" if detail else ""
+            raise ProviderAccessError(f"A API-Football recusou a consulta de confronto direto.{suffix}")
         response = parsed.get("response") if isinstance(parsed, dict) else None
         if not isinstance(response, list):
             raise ProviderAccessError("A API-Football devolveu uma resposta inesperada.")

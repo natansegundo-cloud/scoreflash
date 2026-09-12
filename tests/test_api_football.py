@@ -35,7 +35,7 @@ class ApiFootballClientTests(unittest.TestCase):
                                 "away": {"id": 2, "name": "Vasco DA Gama"},
                             },
                             "goals": {"home": 2, "away": 1},
-                            "league": {"country": "Brazil", "name": "Serie A"},
+                            "league": {"id": 71, "country": "Brazil", "name": "Serie A"},
                         }
                     ]
                 }
@@ -53,7 +53,8 @@ class ApiFootballClientTests(unittest.TestCase):
         self.assertEqual(history.matches[0].statistics["goals"], (2.0, 1.0))
         parameters = parse_qs(urlparse(calls[-1]).query)
         self.assertEqual(parameters["h2h"], ["1-2"])
-        self.assertEqual(parameters["league"], ["71"])
+        self.assertEqual(parameters["last"], ["10"])
+        self.assertNotIn("league", parameters)
 
     def test_resolves_player_and_parses_verified_fixture_statistics(self) -> None:
         calls: list[tuple[str, dict[str, str]]] = []

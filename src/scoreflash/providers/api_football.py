@@ -322,11 +322,10 @@ class ApiFootballHeadToHeadClient:
         if team.external_id == opponent.external_id:
             raise ProviderAccessError("Escolha dois times diferentes para comparar o confronto.")
 
-        parameters: dict[str, object] = {
-            "h2h": f"{team.external_id}-{opponent.external_id}",
-            # Busca uma janela maior pois o recorte de mando é aplicado depois.
-            "last": max(10, games * 2),
-        }
+        # O plano gratuito nao permite o parametro ``last`` neste endpoint.
+        # Recebemos o historico liberado pela fonte e selecionamos a amostra
+        # recente depois de aplicar mando e competicao.
+        parameters: dict[str, object] = {"h2h": f"{team.external_id}-{opponent.external_id}"}
         league_id = self._league_id_for(competition_name)
         matches = tuple(
             match

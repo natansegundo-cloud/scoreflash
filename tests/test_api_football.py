@@ -53,7 +53,7 @@ class ApiFootballClientTests(unittest.TestCase):
         self.assertEqual(history.matches[0].statistics["goals"], (2.0, 1.0))
         parameters = parse_qs(urlparse(calls[-1]).query)
         self.assertEqual(parameters["h2h"], ["1-2"])
-        self.assertEqual(parameters["last"], ["10"])
+        self.assertNotIn("last", parameters)
         self.assertNotIn("league", parameters)
 
     def test_resolves_player_and_parses_verified_fixture_statistics(self) -> None:

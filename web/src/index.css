@@ -8,6 +8,16 @@
   text-rendering: optimizeLegibility;
 }
 
+html {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+#root {
+  min-width: 0;
+}
+
 body {
   min-width: 320px;
   margin: 0;

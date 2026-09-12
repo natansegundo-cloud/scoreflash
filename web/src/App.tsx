@@ -151,28 +151,28 @@ function EmptyResult() {
 
 function PlayerOpportunityPanel({ result }: { result: PlayerOpportunityResult }) {
   return (
-    <div className="space-y-6 sm:space-y-8">
+    <div className="min-w-0 space-y-6 sm:space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-5">
         <div className="flex items-center gap-2 text-xs font-semibold tracking-[0.17em] text-[#e9877e] uppercase"><PulseIcon /> Leitura de jogador</div>
         <span className="border border-[#d96a63]/40 px-2.5 py-1 text-[10px] font-semibold tracking-[0.12em] text-[#f1ada7] uppercase">{opportunityLabel(result)}</span>
       </div>
 
       <div>
-        <p className="font-display text-[clamp(2.25rem,11vw,4.4rem)] leading-[0.94] tracking-[-0.055em] text-[#f6f1e9]">{result.player}</p>
+        <p className="break-words font-display text-[clamp(2.25rem,11vw,4.4rem)] leading-[0.94] tracking-[-0.055em] text-[#f6f1e9]">{result.player}</p>
         <p className="mt-3 text-sm text-[#aab2ad]">{result.team} <span className="px-1 text-[#67706c]">/</span> {result.market}</p>
         <p className="mt-5 max-w-2xl text-lg leading-7 text-[#e6e8e2] sm:mt-6 sm:text-xl sm:leading-8">{result.answer}</p>
       </div>
 
-      <section className="grid grid-cols-3 border-y border-white/10" aria-label="Indicadores da oportunidade">
-        <div className="border-r border-white/10 py-4 pr-3 sm:py-5 sm:pr-5">
+      <section className="grid grid-cols-1 border-y border-white/10 sm:grid-cols-3" aria-label="Indicadores da oportunidade">
+        <div className="border-b border-white/10 py-4 sm:border-r sm:border-b-0 sm:py-5 sm:pr-5">
           <p className="text-[10px] font-semibold tracking-[0.14em] text-[#7f8984] uppercase">Média individual</p>
           <p className="mt-2 font-mono text-2xl tracking-[-0.06em] text-[#f4f0e9] sm:text-3xl">{result.average_metric !== null ? formatNumber(result.average_metric) : "—"}</p>
         </div>
-        <div className="border-r border-white/10 px-3 py-4 sm:px-5 sm:py-5">
+        <div className="border-b border-white/10 py-4 sm:border-r sm:border-b-0 sm:px-5 sm:py-5">
           <p className="text-[10px] font-semibold tracking-[0.14em] text-[#7f8984] uppercase">Linha {result.threshold}+</p>
           <p className="mt-2 font-mono text-2xl tracking-[-0.06em] text-[#f4f0e9] sm:text-3xl">{result.hit_rate !== null ? `${formatNumber(result.hit_rate)}%` : "—"}</p>
         </div>
-        <div className="py-4 pl-3 sm:py-5 sm:pl-5">
+        <div className="py-4 sm:py-5 sm:pl-5">
           <p className="text-[10px] font-semibold tracking-[0.14em] text-[#7f8984] uppercase">Minutos médios</p>
           <p className="mt-2 font-mono text-2xl tracking-[-0.06em] text-[#f4f0e9] sm:text-3xl">{result.average_minutes !== null ? formatNumber(result.average_minutes) : "—"}</p>
         </div>
@@ -277,14 +277,14 @@ function TeamResultPanel({ result }: { result: TeamQueryResult }) {
 
 function HeadToHeadResultPanel({ result }: { result: HeadToHeadQueryResult }) {
   return (
-    <div className="space-y-6 sm:space-y-8">
+    <div className="min-w-0 space-y-6 sm:space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-5">
         <div className="flex items-center gap-2 text-xs font-semibold tracking-[0.17em] text-[#e9877e] uppercase"><PulseIcon /> Confronto direto</div>
         {result.cached && <span className="border border-white/12 px-2.5 py-1 text-[10px] font-semibold tracking-[0.12em] text-[#abb3af] uppercase">resultado recente</span>}
       </div>
 
       <div>
-        <p className="font-display text-[clamp(2.6rem,11vw,5.2rem)] leading-[0.92] tracking-[-0.065em] text-[#f6f1e9]">
+        <p className="break-words font-display text-[clamp(2.6rem,11vw,5.2rem)] leading-[0.92] tracking-[-0.065em] text-[#f6f1e9]">
           {result.team} <span className="text-[#d96a63]">x</span> {result.opponent}
         </p>
         <p className="mt-3 text-sm text-[#aab2ad]">
@@ -292,18 +292,18 @@ function HeadToHeadResultPanel({ result }: { result: HeadToHeadQueryResult }) {
         </p>
       </div>
 
-      <section className="grid grid-cols-3 border-y border-white/10" aria-label="Médias de gols do confronto">
-        <div className="border-r border-white/10 py-4 pr-3 sm:py-5 sm:pr-5">
+      <section className="grid grid-cols-1 border-y border-white/10 sm:grid-cols-3" aria-label="Médias de gols do confronto">
+        <div className="border-b border-white/10 py-4 sm:border-r sm:border-b-0 sm:py-5 sm:pr-5">
           <p className="text-[10px] font-semibold tracking-[0.14em] text-[#7f8984] uppercase">{result.team}</p>
           <p className="mt-2 font-mono text-2xl tracking-[-0.06em] text-[#f4f0e9] sm:text-3xl">{formatNumber(result.team_average)}</p>
           <p className="mt-1 text-[11px] text-[#858d89]">gols por jogo</p>
         </div>
-        <div className="border-r border-white/10 px-3 py-4 sm:px-5 sm:py-5">
+        <div className="border-b border-white/10 py-4 sm:border-r sm:border-b-0 sm:px-5 sm:py-5">
           <p className="text-[10px] font-semibold tracking-[0.14em] text-[#7f8984] uppercase">{result.opponent}</p>
           <p className="mt-2 font-mono text-2xl tracking-[-0.06em] text-[#f4f0e9] sm:text-3xl">{formatNumber(result.opponent_average)}</p>
           <p className="mt-1 text-[11px] text-[#858d89]">gols por jogo</p>
         </div>
-        <div className="py-4 pl-3 sm:py-5 sm:pl-5">
+        <div className="py-4 sm:py-5 sm:pl-5">
           <p className="text-[10px] font-semibold tracking-[0.14em] text-[#e9877e] uppercase">Total</p>
           <p className="mt-2 font-mono text-2xl tracking-[-0.06em] text-[#f1b7b2] sm:text-3xl">{formatNumber(result.average)}</p>
           <p className="mt-1 text-[11px] text-[#858d89]">gols por jogo</p>
@@ -461,19 +461,19 @@ export default function App() {
         </div>
       </header>
 
-      <main className="mx-auto grid max-w-[1440px] gap-4 px-4 pb-4 pt-4 sm:px-8 sm:pb-8 sm:pt-6 lg:grid-cols-[minmax(360px,0.72fr)_minmax(0,1.28fr)] lg:gap-0 lg:px-10 lg:pb-10 lg:pt-10">
-        <section className="flex min-h-0 flex-col border border-white/10 bg-[#151b1d] p-5 sm:min-h-[610px] sm:p-8 lg:border-r-0 lg:p-10">
-          <div className="max-w-xl">
+      <main className="mx-auto grid min-w-0 grid-cols-1 max-w-[1440px] gap-4 px-4 pb-4 pt-4 sm:px-8 sm:pb-8 sm:pt-6 lg:grid-cols-[minmax(360px,0.72fr)_minmax(0,1.28fr)] lg:gap-0 lg:px-10 lg:pb-10 lg:pt-10">
+        <section className="flex min-h-0 min-w-0 flex-col border border-white/10 bg-[#151b1d] p-5 sm:min-h-[610px] sm:p-8 lg:border-r-0 lg:p-10">
+          <div className="min-w-0 max-w-xl">
             <div className="flex items-center gap-2 text-xs font-semibold tracking-[0.17em] text-[#e9877e] uppercase"><PulseIcon /> Comando de análise</div>
-            <h1 className="mt-6 max-w-lg font-display text-[clamp(2.6rem,12vw,4rem)] leading-[0.88] tracking-[-0.07em] text-[#f5f0e8] sm:mt-7 sm:text-[clamp(3rem,5vw,5rem)]">Futebol sem procurar tabela.</h1>
+            <h1 className="mt-6 max-w-[11ch] break-words font-display text-[clamp(2.45rem,11.5vw,4rem)] leading-[0.92] tracking-[-0.07em] text-[#f5f0e8] sm:mt-7 sm:max-w-lg sm:text-[clamp(3rem,5vw,5rem)]">Futebol sem procurar tabela.</h1>
             <p className="mt-5 max-w-md text-base leading-7 text-[#aeb6b2] sm:mt-6">Pergunte sobre um time ou jogador. A resposta vem com recorte, leitura humana e cada jogo usado no cálculo.</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="mt-8 sm:mt-10">
+          <form onSubmit={handleSubmit} className="mt-8 min-w-0 sm:mt-10">
             <label htmlFor="question" className="text-[11px] font-semibold tracking-[0.16em] text-[#d9ddda] uppercase">O que você quer descobrir?</label>
             <div className="mt-3 border border-white/12 bg-[#101416] transition-colors focus-within:border-[#e4524b]">
               <textarea id="question" value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="Ex.: O São Paulo finaliza bem quando joga fora?" rows={3} maxLength={500} className="w-full resize-none bg-transparent px-4 py-4 text-base leading-6 text-[#f1f2ec] outline-none placeholder:text-[#68706d] sm:py-5" />
-              <div className="flex items-center justify-between gap-4 border-t border-white/8 px-3 py-3">
+              <div className="flex flex-col gap-2 border-t border-white/8 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                 <span className="hidden text-xs text-[#79827d] sm:block">Escreva como falaria com um analista.</span>
                 <button type="submit" disabled={isLoading} className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 bg-[#e4524b] px-4 py-2.5 text-sm font-bold text-[#141718] transition-colors hover:bg-[#f0645d] disabled:cursor-wait disabled:bg-[#9e514d] active:translate-y-px sm:ml-auto sm:w-auto">
                   {isLoading ? "Analisando" : "Analisar"}
@@ -486,15 +486,15 @@ export default function App() {
 
           <div className="mt-8 border-t border-white/10 pt-5 sm:mt-auto sm:pt-6">
             <p className="mb-3 text-[10px] font-semibold tracking-[0.16em] text-[#7f8984] uppercase">Experimente uma pergunta</p>
-            <div className="-mx-1 flex snap-x snap-mandatory gap-2 overflow-x-auto px-1 pb-1">
+            <div className="grid grid-cols-1 gap-2 sm:-mx-1 sm:flex sm:snap-x sm:snap-mandatory sm:overflow-x-auto sm:px-1 sm:pb-1">
               {examples.map((example) => (
-                <button key={example} type="button" onClick={() => useExample(example)} className="min-h-[44px] min-w-[13rem] snap-start border border-white/12 px-3 py-2 text-left text-xs leading-4 text-[#bec6c0] transition-colors hover:border-[#d96a63] hover:text-[#f3eee5] active:translate-y-px">{example}</button>
+                <button key={example} type="button" onClick={() => useExample(example)} className="min-h-[44px] w-full border border-white/12 px-3 py-2 text-left text-xs leading-4 text-[#bec6c0] transition-colors hover:border-[#d96a63] hover:text-[#f3eee5] active:translate-y-px sm:min-w-[13rem] sm:w-auto sm:snap-start">{example}</button>
               ))}
             </div>
           </div>
         </section>
 
-        <aside ref={resultsRef} className="min-h-0 scroll-mt-4 border border-white/10 bg-[#202728] p-5 sm:min-h-[610px] sm:p-8 lg:p-10">
+        <aside ref={resultsRef} className="min-h-0 min-w-0 scroll-mt-4 border border-white/10 bg-[#202728] p-5 sm:min-h-[610px] sm:p-8 lg:p-10">
           {isLoading ? <ResultsSkeleton /> : <ResultsPanel result={result} />}
         </aside>
       </main>

@@ -156,7 +156,12 @@ class ApiFootballPlayerStatisticsClient:
         if not 3 <= games <= 10:
             raise ValueError("games deve estar entre 3 e 10.")
         player = self._resolve_player(player_name, team_name)
-        fixtures = self._request("fixtures", {"team": player.team_id, "last": games})
+        # O plano gratuito não libera o parâmetro ``last``. Selecionamos a
+        # amostra recente localmente antes de consultar as estatísticas.
+        fixtures = self._recent_finished_fixtures(
+            self._request("fixtures", {"team": player.team_id}),
+            games,
+        )
         statistics: list[VerifiedPlayerMatchStatistics] = []
         for fixture in self._finished_fixtures(fixtures):
             statistic = self._player_statistic_for_fixture(fixture, player)
@@ -225,6 +230,25 @@ class ApiFootballPlayerStatisticsClient:
                 continue
             fixtures.append(item)
         return tuple(fixtures)
+
+    def _recent_finished_fixtures(
+        self,
+        response: list[object],
+        games: int,
+    ) -> tuple[dict[str, object], ...]:
+        return tuple(
+            sorted(
+                self._finished_fixtures(response),
+                key=self._fixture_date_key,
+                reverse=True,
+            )[:games]
+        )
+
+    @staticmethod
+    def _fixture_date_key(fixture: Mapping[str, object]) -> str:
+        fixture_data = fixture.get("fixture")
+        date = fixture_data.get("date") if isinstance(fixture_data, dict) else None
+        return date if isinstance(date, str) else ""
 
     def _player_statistic_for_fixture(
         self,

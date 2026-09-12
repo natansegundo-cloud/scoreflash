@@ -175,6 +175,9 @@ class ApiFootballPlayerStatisticsClient:
         reversed_name = " ".join(reversed(player_name.split()))
         if reversed_name and reversed_name.casefold() != player_name.casefold():
             search_terms.append(reversed_name)
+        surname = max(player_name.split(), key=len, default="")
+        if len(surname) >= 3 and surname.casefold() not in {term.casefold() for term in search_terms}:
+            search_terms.append(surname)
         for search_term in search_terms:
             response = self._request("players", {"search": search_term, "team": team_id})
             for item in response:

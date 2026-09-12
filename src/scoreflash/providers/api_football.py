@@ -300,7 +300,9 @@ class ApiFootballPlayerStatisticsClient:
             raise ProviderAccessError("A fonte de estatísticas individuais devolveu um formato inválido.") from error
         errors = parsed.get("errors") if isinstance(parsed, dict) else None
         if errors:
-            raise ProviderAccessError("A fonte de estatísticas individuais recusou a consulta.")
+            detail = _provider_error_detail(errors)
+            suffix = f" Detalhe: {detail}" if detail else ""
+            raise ProviderAccessError(f"A fonte de estatísticas individuais recusou a consulta.{suffix}")
         response = parsed.get("response") if isinstance(parsed, dict) else None
         if not isinstance(response, list):
             raise ProviderAccessError("A fonte de estatísticas individuais devolveu uma resposta inesperada.")

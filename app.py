@@ -11,4 +11,3 @@ if str(source_directory) not in sys.path:
     sys.path.insert(0, str(source_directory))
 
 from scoreflash.api import app
-
